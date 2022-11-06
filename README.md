@@ -3,7 +3,7 @@ Follow below steps before running main function
 1) clone this repository in your local manchine
 2) Pip install requiremnets.txt
 3) create .env file on root directory
-4) strore polygon api key in .env file
+4) store polygon api key in .env file
     ```
     key=""
     ```
