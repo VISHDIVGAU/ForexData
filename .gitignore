@@ -1,0 +1,6 @@
+# ignore ALL  files
+*.log
+*.db
+.env
+__pycache__/
+.git/
