@@ -9,4 +9,7 @@ Follow below steps before running main function
     ```
 5) run below command in root directory on command line to fetch and store data 
     ```python:
-    python3 main.py 
+    python3 main.py
+    ```
+    or
+    Run two cell after cell 26 in the Jupitor notebook mmc639_Final_Exam-Copy1. 
