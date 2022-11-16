@@ -117,13 +117,14 @@ class ForexData:
                 # This gets the Last Trade object defined in the API Resource
                 last_trade = resp.last
                 # Format the timestamp from the result
-                dt = self.ts_to_datetime(last_trade["timestamp"])
+                #print(last_trade.timestamp)
+                dt = self.ts_to_datetime(last_trade.timestamp)
                 # Get the current time and format it
                 insert_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 # Calculate the price by taking the average of the bid and ask prices
-                avg_price = (last_trade['bid'] + last_trade['ask'])/2
+                avg_price = (last_trade.bid + last_trade.ask)/2
                 # Write the data to the SQLite database, raw data tables
-                with engine.begin() as conn:
+                with self.engine.begin() as conn:
                     conn.execute(text("INSERT INTO "+from_+to+"_raw(ticktime, fxrate, inserttime) VALUES (:ticktime, :fxrate, :inserttime)"),[{"ticktime": dt, "fxrate": avg_price, "inserttime": insert_time}])
     
 
