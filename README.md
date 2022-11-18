@@ -7,9 +7,15 @@ Follow below steps before running main function
     ```
     key=""
     ```
-5) run below command in root directory on command line to fetch and store data 
+# Assignment 1
+1) run below command in root directory on command line to fetch and store data 
     ```python:
     python3 main.py
     ```
     or
-    Run two cell after cell 26 in the Jupiter notebook mmc639_Final_Exam-Copy1. 
+    Run two cell after cell 26 in the Jupiter notebook mmc639_Final_Exam-Copy1.
+
+# Assignment 2
+1) run below command in root directory on command line to fetch, store and print data
+   ```python:
+   python3 keltner_main.py 
