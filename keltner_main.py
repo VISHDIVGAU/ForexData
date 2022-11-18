@@ -28,7 +28,7 @@ def main():
     #data= ForexData()
     #data.forexdata()
     data= KeltnerForexData()
-    data.keltner_forexdata() # collect vector of max, min, mean, vol, fd of different currency pairs in _agg tables for a period of 10 hours aggregated over a window of six minutes
+    # data.keltner_forexdata() # collect vector of max, min, mean, vol, fd of different currency pairs in _agg tables for a period of 10 hours aggregated over a window of six minutes
     data.print_data() # print rows in _agg tables for all currency pairs.
 
 if __name__=="__main__":
