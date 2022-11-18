@@ -41,7 +41,7 @@ class KeltnerForexData:
                                 ["USD","INR",{'upper': list(), 'lower': list()},0]
                              ]
         self.key= config['key']
-        self.engine= create_engine("sqlite+pysqlite:///final.db", echo=False, future=True)
+        self.engine= create_engine("sqlite+pysqlite:///final_updated.db", echo=False, future=True)
 
     # Function slightly modified from polygon sample code to format the date string 
     def ts_to_datetime(self,ts) -> str:
@@ -113,7 +113,7 @@ class KeltnerForexData:
         length= len(keltner_Ubands)
         #print(length)
         if avg_price < keltner_Ubands[0]:
-            l=1 # first element index in the list
+            l=0 # first element index in the list
             h= length-1 # last element index in the list
             while l<h:
                 mid= l+ int((h-l)/2) # average price of previous six minute data
@@ -123,7 +123,7 @@ class KeltnerForexData:
                     l=mid+1
             return -l # index of smallest band greater than or equal to the current price
         else:
-            l=1 # first element index in the list
+            l=0 # first element index in the list
             h= length-1 # last element index in the list
             while l<h:
                 mid= l+ int((h-l)/2) # average price of previous six minute data
@@ -139,6 +139,9 @@ class KeltnerForexData:
             for curr in self.currency_pairs:
                 print(curr[0]+curr[1])
                 print("------------------------------------------------")
+                count_rows= conn.execute(text("SELECT COUNT(*)  FROM "+curr[0]+curr[1]+"_agg;"))
+                for row in count_rows:
+                    print("total no of rows in table ",row)
                 print("inserttime","\t\t","avgfxrate","\t","min_price","\t","max_price","\t","volatility","\t","fractal_dimension")
                 data= conn.execute(text("SELECT *  FROM "+curr[0]+curr[1]+"_agg;"))
                 for row in data:
