@@ -4,6 +4,8 @@ from polygon import RESTClient
 from sqlalchemy import create_engine 
 from sqlalchemy import text
 from dotenv import dotenv_values
+import pandas as pd
+import os
 # store key value pairs defined in .env file in config
 config= dotenv_values(".env")
 
@@ -41,7 +43,7 @@ class KeltnerForexData:
                                 ["USD","INR",{'upper': list(), 'lower': list()},0]
                              ]
         self.key= config['key']
-        self.engine= create_engine("sqlite+pysqlite:///final_updated.db", echo=False, future=True)
+        self.engine= create_engine("sqlite+pysqlite:///final_updated.db", echo=False, future=False)
 
     # Function slightly modified from polygon sample code to format the date string 
     def ts_to_datetime(self,ts) -> str:
@@ -135,6 +137,7 @@ class KeltnerForexData:
 
     # this function will fetch data from sqlite tables and store them in pandas dataframe.
     def print_data(self):
+        basedir= os.path.abspath(os.path.dirname(__file__))
         with self.engine.begin() as conn:
             for curr in self.currency_pairs:
                 print(curr[0]+curr[1])
@@ -142,10 +145,10 @@ class KeltnerForexData:
                 count_rows= conn.execute(text("SELECT COUNT(*)  FROM "+curr[0]+curr[1]+"_agg;"))
                 for row in count_rows:
                     print("total no of rows in table ",row)
-                print("inserttime","\t\t","avgfxrate","\t","min_price","\t","max_price","\t","volatility","\t","fractal_dimension")
-                data= conn.execute(text("SELECT *  FROM "+curr[0]+curr[1]+"_agg;"))
-                for row in data:
-                    print(row)
+                results= pd.read_sql_query("SELECT *  FROM "+curr[0]+curr[1]+"_agg;", self.engine)
+                results.to_csv(os.path.join(basedir, curr[0]+curr[1]+".csv"), index= False, sep=";")
+                #print("inserttime","\t\t","avgfxrate","\t","min_price","\t","max_price","\t","volatility","\t","fractal_dimension")
+                
 
     # This function is called every 6 minutes to calucate mean, max, min, volatility(max-min), store it in the aggregate table, and then delete the raw data
     def keltner_forexdata(self):
