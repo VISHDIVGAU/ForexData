@@ -32,18 +32,18 @@ class KeltnerForexData:
     # Init all the necessary variables when instantiating the class
     def __init__(self):
         self.currency_pairs = [ ["AUD","USD",{'upper': list(), 'lower': list()},0],
-                                ["GBP","EUR",{'upper': list(), 'lower': list()},0],
-                                ["USD","CAD",{'upper': list(), 'lower': list()},0],
-                                ["USD","JPY",{'upper': list(), 'lower': list()},0],
-                                ["USD","MXN",{'upper': list(), 'lower': list()},0],
                                 ["EUR","USD",{'upper': list(), 'lower': list()},0],
-                                ["USD","CNY",{'upper': list(), 'lower': list()},0],
-                                ["USD","CZK",{'upper': list(), 'lower': list()},0],
-                                ["USD","PLN",{'upper': list(), 'lower': list()},0],
-                                ["USD","INR",{'upper': list(), 'lower': list()},0]
+                                ["CAD","USD",{'upper': list(), 'lower': list()},0],
+                                ["JPY","USD",{'upper': list(), 'lower': list()},0],
+                                ["CNY","USD",{'upper': list(), 'lower': list()},0],
+                                ["GBP","USD",{'upper': list(), 'lower': list()},0],
+                                ["MXN","USD",{'upper': list(), 'lower': list()},0],
+                                ["CZK","USD",{'upper': list(), 'lower': list()},0],
+                                ["PLN","USD",{'upper': list(), 'lower': list()},0],
+                                ["INR","USD",{'upper': list(), 'lower': list()},0]
                              ]
         self.key= config['key']
-        self.engine= create_engine("sqlite+pysqlite:///final_updated.db", echo=False, future=False)
+        self.engine= create_engine("sqlite+pysqlite:///final_test.db", echo=False, future=False)
 
     # Function slightly modified from polygon sample code to format the date string 
     def ts_to_datetime(self,ts) -> str:
