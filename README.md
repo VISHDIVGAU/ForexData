@@ -26,4 +26,4 @@ Follow below steps before running main function
 	 python3 trailingstops_main.py
   ```
 2) below image show the total investment and  profit or loss we made by buying and selling the currency. For currency we buy, profit will be positive, while for currency we sell, profit will be in negative.
-   ![Result](ForexData/profit_loss.png)
+   ![Result](https://github.com/VISHDIVGAU/ForexData/blob/main/profit_loss.png?raw=true)
