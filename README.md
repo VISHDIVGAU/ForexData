@@ -16,6 +16,14 @@ Follow below steps before running main function
     Run two cell after cell 26 in the Jupiter notebook mmc639_Final_Exam-Copy1.
 
 # Assignment 2
-1) run below command in root directory on command line to fetch, store and print data
+1) run below command in root directory on command line to fetch, store ,print and create csv files for currency pairs
    ```python:
-   python3 keltner_main.py 
+   python3 keltner_main.py
+   ```
+# Assignment 3
+1) run below command in root directory on command line to fetch, store, print and create csv files for currency pairs and currency we sell and currency we bought
+  ```python:
+	 python3 trailingstops_main.py
+  ```
+2) below image show the total investment and  profit or loss we made by buying and selling the currency. For currency we buy, profit will be positive, while for currency we sell, profit will be in negative.
+   ![Result](/ForexData/profit_loss.png)

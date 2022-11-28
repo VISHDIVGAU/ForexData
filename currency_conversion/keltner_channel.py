@@ -16,10 +16,10 @@ class KeltnerForexData:
     :param key: polygon.io key store in library credentials
     :type key: string
 
-    :param currency_pairs: A dictionary defining the set of currency pairs we will be pulling data for.
-    :type currency_pairs: dictionary
+    :param currency_pairs: List contains list of trading currency pairs, upper and lower keltner bands, Total no of keltner bands crosses in six minutes window for that perticular currency pairs.
+    :type currency_pairs: List
 
-    :param count : counter in seconds to check program hits 24 hours.
+    :param count : counter in seconds to check program hits 10 hours.
     :type count:  int
 
     :param agg_count: counter in seconds to check if 6 minutes has been reached or not 
@@ -42,10 +42,16 @@ class KeltnerForexData:
                                 ["PLN","USD",{'upper': list(), 'lower': list()},0],
                                 ["INR","USD",{'upper': list(), 'lower': list()},0]
                              ]
+        # API Key
         self.key= config['key']
+        # create/ read SQL LITE DB file
         self.engine= create_engine("sqlite+pysqlite:///final_test.db", echo=False, future=False)
 
-    # Function slightly modified from polygon sample code to format the date string 
+    # Function slightly modified from polygon sample code to format the date string
+    """
+    :param ts: timestamp that need to be formated
+    :type ts: String
+    """
     def ts_to_datetime(self,ts) -> str:
         return datetime.datetime.fromtimestamp(ts / 1000.0).strftime('%Y-%m-%d %H:%M:%S')
 
@@ -63,13 +69,29 @@ class KeltnerForexData:
             for curr in self.currency_pairs:
                 conn.execute(text("CREATE TABLE "+curr[0]+curr[1]+"_raw(ticktime text, fxrate  numeric, inserttime text, cross_number numeric);"))
 
-    # This creates a table for storing the (6 min interval) aggregated price data for each currency pair in the SQLite database 
+    # This creates a table for storing the (6 min interval) aggregated price data for each currency pair in the SQLite database
+    """
+    This table contains following coloums
+    inserttime-: Last tik time in raw table for that currency pairs
+    avgfxrate-: mean price for that currency pair in that six minutes window
+    min_price-: minimum price in which that currency pair is traded in that six minute window
+    max_price-: maximum price in which that currency pair is traded in that six minute window
+    volatility-: max_price minus min_price in that six minute window
+    fractal_dimension -: Total number of keltner bands crosses in that six minute window divide by volatility
+    """
     def initialize_aggregated_tables(self):
         with self.engine.begin() as conn:
             for curr in self.currency_pairs:
                 conn.execute(text("CREATE TABLE "+curr[0]+curr[1]+"_agg(inserttime text, avgfxrate  numeric, min_price numeric, max_price numeric, volatility numeric, fractal_dimension nuemric);"))
 
     # function will claculate 100 upper bands and 100 lower bands from avg_price for this six minute data and store in corresponding currency pair dictionary.
+    """
+    Parameters required for this function are-:
+
+    curr-: list of perticular currency pair for which we are calculating keltner bands
+    avg_price-: mean price for this six minute window
+    volatility-: max_price- min_price for this six minute window
+    """
     def calculate_keltner_bands(self, curr, avg_price, volatility):
         curr[2]['upper'].append(avg_price)
         curr[2]['lower'].append(avg_price)
@@ -80,7 +102,10 @@ class KeltnerForexData:
             curr[2]['lower'].append(lower_band)
 
 
-    # This function is called every 6 minutes to aggregate the data, store it in the aggregate table, and then delete the raw data
+    """
+    his function calculate mean, max, min, volatility, keltner bands,and fractal dimension for that six minute window.
+    we store all these values in _agg tables for that currency pairs
+    """
     def aggregate_raw_data_tables(self):
         with self.engine.begin() as conn:
             for curr in self.currency_pairs:
@@ -105,15 +130,16 @@ class KeltnerForexData:
                 # insert inside the corresponding currency pairs _agg tables
                 conn.execute(text("INSERT INTO "+curr[0]+curr[1]+"_agg (inserttime, avgfxrate, min_price, max_price, volatility, fractal_dimension) VALUES (:inserttime, :avgfxrate, :min_price, :max_price, :volatility, :fractal_dimension);"),[{"inserttime": last_date, "avgfxrate": avg_price, "min_price": min_price, "max_price": max_price, "volatility": volatility, "fractal_dimension": fd}])
     
+    """
     # Elements in upper band list are already sorted in ascending order while elements in lower band list are store in decending order.
     # I am using binary search to serch index of larget element smaller than or equal to the current price in upper band and index of smallest element greater than or equal to current price in lower band.
     # If current price is lower than avg price, we search in lower band list, other wise we search for index in upper band list.
     # if index of upper band list is returned, we returned the index as positive number, otherwise we return it as negative.
+    """
     def calculate_crosses(self, currency, avg_price):
         keltner_Ubands= currency[2]['upper']
         keltner_Lbands=  currency[2]['lower'] # list of 100 upper bands and 100 lower bands from previous six minutes data each of length 101
         length= len(keltner_Ubands)
-        #print(length)
         if avg_price < keltner_Ubands[0]:
             l=0 # first element index in the list
             h= length-1 # last element index in the list
@@ -135,7 +161,7 @@ class KeltnerForexData:
                     h= mid-1
             return l # index of largest band smaller or equal to the current price.
 
-    # this function will fetch data from sqlite tables and store them in pandas dataframe.
+    # this function will fetch data from sqlite tables and create csv files for _agg tables in db file.
     def print_data(self):
         basedir= os.path.abspath(os.path.dirname(__file__))
         with self.engine.begin() as conn:
@@ -147,29 +173,34 @@ class KeltnerForexData:
                     print("total no of rows in table ",row)
                 results= pd.read_sql_query("SELECT *  FROM "+curr[0]+curr[1]+"_agg;", self.engine)
                 results.to_csv(os.path.join(basedir, curr[0]+curr[1]+".csv"), index= False, sep=";")
-                #print("inserttime","\t\t","avgfxrate","\t","min_price","\t","max_price","\t","volatility","\t","fractal_dimension")
                 
 
-    # This function is called every 6 minutes to calucate mean, max, min, volatility(max-min), store it in the aggregate table, and then delete the raw data
+    """
+    This function fetch polygon data every second. We have two counters count and agg_count to check no of hours and no of minutes that our program has run.
+    We reset agg_count every six minutes and call
+    """
     def keltner_forexdata(self):
         # Number of list iterations - each one should last about 1 second
-        count = 0
-        agg_count = 0
+        count = 0 # counter to keep track of 10 hours execution
+        agg_count = 0 # counter to keep track of six minute wndow
+        
         # Create the needed tables in the database
         self.initialize_raw_data_tables()
         self.initialize_aggregated_tables()
+        
         # Open a RESTClient for making the api calls
         client= RESTClient(self.key) 
-        # Loop that runs until the total duration of the program hits 24 hours. 
+        
+        # Loop that runs until the total duration of the program hits 10 hours. 
         while count < 36001: # 36000 seconds = 10 hours
-            # Make a check to see if 6 minutes has been reached or not
+            
+            # check if program is executed for six minutes, if yes, call function aggregate_raw_data_tables() and reset_raw_data_tables() and reset agg_count to zero
             if agg_count == 360:
                 # Aggregate the data and clear the raw data tables
                 self.aggregate_raw_data_tables()
                 self.reset_raw_data_tables()
                 agg_count = 0
-            # Only call the api every 1 second, so wait here for 0.75 seconds, because the code takes about .15 seconds to run
-            time.sleep(0.50)
+            time.sleep(0.10)
             # Increment the counters
             count += 1
             agg_count +=1
@@ -186,29 +217,25 @@ class KeltnerForexData:
                 # This gets the Last Trade object defined in the API Resource
                 last_trade = resp.last
                 # Format the timestamp from the result
-                #print(last_trade.timestamp)
                 dt = self.ts_to_datetime(last_trade.timestamp)
                 # Get the current time and format it
                 insert_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 # Calculate the price by taking the average of the bid and ask prices
                 avg_price = (last_trade.bid + last_trade.ask)/2
-                cross_number = 0
-                c_number=0
+                cross_number = 0 # no of keltner bands crossed by the current price fetched
+                c_number=0 # # relative no of keltner bands crossed with respect to previous price postion index.
                 # after first six minutes we started claculating crosses for current fetch price 
                 if count > 360: 
                     # return the index of element smaller than or equal to price from upper band list or greater than or equal to price from lower band list
-                    cross_number =self.calculate_crosses(currency, avg_price) 
-                    #print(cross_number," ",currency[3])
-                    c_number= cross_number- currency[3] # subtract the previous index from current index to get the current no of bands crossed.
-                    # If previous index is in upper band list and current index is in lower band list, we get the addition of upper band index and lower band index 
-                    #as lower band index is retuned in negative and upper band index is returned as positive. 
+                    cross_number =self.calculate_crosses(currency, avg_price)  
+                    # subtract the previous index from current index to get the current no of bands crossed.
+                    # If previous index is in upper band list and current index is in lower band list, we get the addition of upper band index and lower band index as lower band index is retuned in negative and upper band index is returned as positive. 
                     #Simmilarly if both previous and current index in lies in the sams bands i.e upper band list or lower band list, current index will get subtracted from previous index.
+                    c_number= cross_number- currency[3]
                     c_number= abs(c_number)
-                    #print("current ",cross_number,"  previous ",currency[3]," c_number ",c_number)
-                    currency[3]= cross_number
+                    currency[3]= cross_number # store index of current price to calculate the relative position of next price
                 # Write the data to the SQLite database, raw data tables
                 with self.engine.begin() as conn:
                     conn.execute(text("INSERT INTO "+from_+to+"_raw(ticktime, fxrate, inserttime, cross_number) VALUES (:ticktime, :fxrate, :inserttime, :cross_number)"),[{"ticktime": dt, "fxrate": avg_price, "inserttime": insert_time, "cross_number": c_number}])
-                #print({"ticktime": dt, "fxrate": avg_price, "inserttime": insert_time, "cross_number": c_number})
 
 
