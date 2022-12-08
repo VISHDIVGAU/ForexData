@@ -2,3 +2,6 @@
 from currency_conversion.forex_data import ForexData
 from currency_conversion.keltner_channel import KeltnerForexData
 from currency_conversion.trailing_stops import TrailingStopsData
+from currency_conversion.trailing_stops2_testing_data import TrailingStopsTrainingData2
+from currency_conversion.trailing_stops2 import TrailingStopsData2
+from currency_conversion.trailing_stops2_real_time_data import TrailingStopsData2RealTimeData
