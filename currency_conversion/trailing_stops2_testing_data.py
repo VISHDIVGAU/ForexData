@@ -49,8 +49,8 @@ class TrailingStopsTrainingData2:
                                 ["USD","CAD",{'upper': list(), 'lower': list()},0,100],
                                 ["USD","HKD",{'upper': list(), 'lower': list()},0,100],
                                 ["USD","AUD",{'upper': list(), 'lower': list()},0,100],
-                                ["USD","NZD",{'upper': list(), 'lower': list()},0,100}],
-                                ["USD","SGD",{'upper': list(), 'lower': list()},0,100}]
+                                ["USD","NZD",{'upper': list(), 'lower': list()},0,100],
+                                ["USD","SGD",{'upper': list(), 'lower': list()},0,100]
                              ]
         # API Key
         self.key= config['key']
