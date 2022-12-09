@@ -10,6 +10,7 @@ def main():
     """
 
     data= TrailingStopsData2()
+    data.reset_tables()
     data.sorting_one() # get the min and max range after sorting fd and volatility independently
     data.sorting_two() # get the min and max range after sorting fd first and then getting min and max range by sorting volatility coloumn of that partition.
     data.sorting_three() #get the min and max range after sorting volatility first and then getting min and max range by sorting fd coloumn of that partition.

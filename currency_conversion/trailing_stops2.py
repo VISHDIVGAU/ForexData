@@ -97,8 +97,8 @@ class TrailingStopsData2:
     # Function which clears the all the tables. This funcion has to be used only when we starting training again. 
     def reset_tables(self):
         with self.engine.begin() as conn:
+            conn.execute(text("DROP TABLE best_classification;"))
             for curr in self.currency_pairs:
-                conn.execute(text("DROP TABLE "+curr[0]+curr[1]+"_best;"))
                 conn.execute(text("DROP TABLE "+curr[0]+curr[1]+"_sort_one;"))
                 conn.execute(text("DROP TABLE "+curr[0]+curr[1]+"_sort_two;"))
                 conn.execute(text("DROP TABLE "+curr[0]+curr[1]+"_sort_three;"))
@@ -448,6 +448,12 @@ class TrailingStopsData2:
         self.initialize_best_classification_method()
         for index, df in enumerate(self.dfs):
             self.predictions.append([])
+            print(df[0])
+            print("___________________________")
+            print(df[1])
+            print("______________________________")
+            print(df[2])
+            print("_____________________________")
             reg1= pycr.setup(data= df[0].sample(frac=1).reset_index(drop=True), target= 'return') # initialize the model
             reg2= pycr.setup(data= df[1].sample(frac=1).reset_index(drop=True), target= 'return')
             reg3= pycr.setup(data= df[2].sample(frac=1).reset_index(drop=True), target= 'return')
@@ -470,6 +476,7 @@ class TrailingStopsData2:
             l.append(pycu.check_metric(tpred1['return'], tpred1['Label'], 'R2'))  # we will get the mean R2 value of the predictions of this model
             l.append(pycu.check_metric(tpred2['return'], tpred2['Label'], 'R2'))
             l.append(pycu.check_metric(tpred3['return'], tpred3['Label'], 'R2'))
+            print(l)
             self.predictions[index].extend(l) # storing predictions in self.predictions
             arr= np.array(self.predictions[index]) 
             ind= np.argmin(arr) # get index of minimum R2 value. That index indicate best sorting menthod
