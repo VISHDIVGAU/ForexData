@@ -44,7 +44,10 @@ This assignment is divided in three parts. We will get _model_perf.csv files for
   ```
 # Assignment 5
 This assignment also divided in three parts. We will get _bought.csv and _sell.csv files with total investment made and profit or loss data.
-I am using mongoDB to store the data. To install Mongodb locally in your computer please refer mongodbinstallation.md file.
+I am using mongoDB to store the data. 
+
+To install Mongodb locally in your computer please refer # mongodbinstallation.md file.
+
 1) We are collecting 10 hour data for all the given currency pairs. In this assignment Volatility is normalized. Run below command to collect data.
    ```python:
    python3 trailingstops3_training_data_main.py
