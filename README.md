@@ -64,7 +64,8 @@ I am using mongoDB to store the data. To install Mongodb locally in your compute
 	d) If profit or loss from actual return and predicted return postive for the currency in selling list, then it means we are making loss and our investment decison depends if the percentage future loss is above the threshold value or not. If not, we will still invest further else we will not. The threshold value of percentage future loss decreases every hour from 0.25 on first hor, 0.15, second hour, 0.10, third hour, aand 0.05 from fourth hour onwards.  
 
 At the end of ten hours data _bought and _sell collections we will have data regarding total initial investment, aggregate return, predicted aggregate return, avtual profit or loss, predicted profit or loss, and percentage future loss. 
+
 Run below command to get the profit or loss and total investment on real time data.
-	```python:
-  	python3 trailingstops3realtimedata_main.py
-  	```
+```python:
+  python3 trailingstops3realtimedata_main.py
+ ```
