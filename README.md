@@ -56,9 +56,12 @@ I am using mongoDB to store the data. To install Mongodb locally in your compute
 3) We are classifying FD and Vol in real time and getting predicted return for next six minutes and actual return and storing _agg collection. We are calculating profit or loss from actual return and predicted return. We will calculate percentage from the difference between actual return and predicted return. We will make the decision of investing more every hour according to below rules.
 
 	a) If profit or loss from actual return and predicted return positive for the currency in buying list, then it means we are making profit and we invest further.
+	
 	b) If profit or loss from actual return and predicted return negative for the currency in buying list, then it means we are making loss and our investment decison depends if the percentage future loss is above the threshold value or not. If not, we will still invest further else we will not. The threshold value of percentage future loss decreases every hour from 0.25 on first hor, 0.15, second hour, 0.10, third hour, aand 0.05 from fourth hour onwards.
+	
 	c) If profit or loss from actual return and predicted return negative for the currency in selling list, then it means we are making profit and we invest further.
-	b) If profit or loss from actual return and predicted return postive for the currency in selling list, then it means we are making loss and our investment decison depends if the percentage future loss is above the threshold value or not. If not, we will still invest further else we will not. The threshold value of percentage future loss decreases every hour from 0.25 on first hor, 0.15, second hour, 0.10, third hour, aand 0.05 from fourth hour onwards.  
+	
+	d) If profit or loss from actual return and predicted return postive for the currency in selling list, then it means we are making loss and our investment decison depends if the percentage future loss is above the threshold value or not. If not, we will still invest further else we will not. The threshold value of percentage future loss decreases every hour from 0.25 on first hor, 0.15, second hour, 0.10, third hour, aand 0.05 from fourth hour onwards.  
 
 At the end of ten hours data _bought and _sell collections we will have data regarding total initial investment, aggregate return, predicted aggregate return, avtual profit or loss, predicted profit or loss, and percentage future loss. 
 Run below command to get the profit or loss and total investment on real time data.
