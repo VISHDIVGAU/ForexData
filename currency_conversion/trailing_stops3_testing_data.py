@@ -1,8 +1,9 @@
 import datetime
 import time
 from polygon import RESTClient
-from sqlalchemy import create_engine 
-from sqlalchemy import text
+#from sqlalchemy import create_engine 
+#from sqlalchemy import text
+import pymongo
 from dotenv import dotenv_values
 import pandas as pd
 import os
@@ -14,7 +15,7 @@ import numpy as np
 config= dotenv_values(".env")
 #pd.set_option('display.float_format', lambda x: '%.3f' % x)
 
-class TrailingStopsTrainingData2:
+class TrailingStopsTrainingData3:
     """
     Fetch Data from polygon API and store in sqllite database
     
@@ -45,17 +46,19 @@ class TrailingStopsTrainingData2:
     def __init__(self):
         self.currency_pairs = [ ["EUR","USD",{'upper': list(), 'lower': list()},0,100],
                                 ["GBP","USD",{'upper': list(), 'lower': list()},0,100],
-                                ["USD","CHF",{'upper': list(), 'lower': list()},0,100],
-                                ["USD","CAD",{'upper': list(), 'lower': list()},0,100],
-                                ["USD","HKD",{'upper': list(), 'lower': list()},0,100],
-                                ["USD","AUD",{'upper': list(), 'lower': list()},0,100],
-                                ["USD","NZD",{'upper': list(), 'lower': list()},0,100],
-                                ["USD","SGD",{'upper': list(), 'lower': list()},0,100]
+                                ["CHF","USD",{'upper': list(), 'lower': list()},0,100],
+                                ["CAD","USD",{'upper': list(), 'lower': list()},0,100],
+                                ["HKD","USD",{'upper': list(), 'lower': list()},0,100],
+                                ["AUD","USD",{'upper': list(), 'lower': list()},0,100],
+                                ["NZD","USD",{'upper': list(), 'lower': list()},0,100],
+                                ["SGD","USD",{'upper': list(), 'lower': list()},0,100]
                              ]
         # API Key
         self.key= config['key']
-        # create/ read SQL LITE DB file
-        self.engine= create_engine("sqlite+pysqlite:///final_trailingstops_2_updated.db", echo=False, future=False)
+        # create pymango client for mongodb 
+        self.client = pymongo.MongoClient("127.0.0.1", 27017)
+        # create or point to database in mongodb
+        self.db= self.client['ForexData']
 
     # Function slightly modified from polygon sample code to format the date string
     """
@@ -67,34 +70,11 @@ class TrailingStopsTrainingData2:
 
     # Function which clears the raw data tables once we have aggregated the data in a 6 minute interval
     def reset_raw_data_tables(self):
-        with self.engine.begin() as conn:
-            for curr in self.currency_pairs:
-                curr[3]=0 # it sets the item at index 3 in each currency pair list to zero after every six minutes
-                conn.execute(text("DROP TABLE "+curr[0]+curr[1]+"_raw;"))
-                conn.execute(text("CREATE TABLE "+curr[0]+curr[1]+"_raw(ticktime text, fxrate  numeric, inserttime text, cross_number numeric );"))
+        for curr in self.currency_pairs:
+            curr[3]=0 # it sets the item at index 3 in each currency pair list to zero after every six minutes
+            collection= self.db[curr[0]+curr[1]+"_raw"]
+            collection.delete_many({})
 
-
-    # This creates a table for storing the raw, unaggregated price data for each currency pair in the SQLite database
-    def initialize_raw_data_tables(self):
-        with self.engine.begin() as conn:
-            for curr in self.currency_pairs:
-                conn.execute(text("CREATE TABLE "+curr[0]+curr[1]+"_raw(ticktime text, fxrate  numeric, inserttime text, cross_number numeric);"))
-
-    # This creates a table for storing the (6 min interval) aggregated price data for each currency pair in the SQLite database
-    """
-    This table contains following coloums
-    inserttime-: Last tik time in raw table for that currency pairs
-    avgfxrate-: mean price for that currency pair in that six minutes window
-    min_price-: minimum price in which that currency pair is traded in that six minute window
-    max_price-: maximum price in which that currency pair is traded in that six minute window
-    volatility-: max_price minus min_price in that six minute window
-    fractal_dimension -: Total number of keltner bands crosses in that six minute window divide by volatility
-    return -: fraction of change in current price and price one second before to the price one second before. 
-    """
-    def initialize_aggregated_tables(self):
-        with self.engine.begin() as conn:
-            for curr in self.currency_pairs:
-                conn.execute(text("CREATE TABLE "+curr[0]+curr[1]+"_agg(inserttime text, avgfxrate  numeric, min_price numeric, max_price numeric, volatility numeric, fractal_dimension nuemric, return numeric);"))
     # function will claculate 100 upper bands and 100 lower bands from avg_price for this six minute data and store in corresponding currency pair dictionary.
     """
     Parameters required for this function are-:
@@ -117,37 +97,38 @@ class TrailingStopsTrainingData2:
     
     """
     def aggregate_raw_data_tables(self):
-        with self.engine.begin() as conn:
-            for curr in self.currency_pairs: 
-                result = conn.execute(text("SELECT AVG(fxrate) as avg_price, MIN(fxrate) as min_price, MAX(fxrate) as max_price, SUM(cross_number) as total_crosses FROM "+curr[0]+curr[1]+"_raw;"))
-                for row in result:
-                    avg_price = row.avg_price # mean price for this six minutes data
-                    min_price = row.min_price # minimum price for this six minutes data
-                    max_price = row.max_price # maximum price for this six minutes data
-                    volatility = (max_price- min_price)/avg_price
-                    print(row.total_crosses)
-                    if volatility!=0: # In case if their is no change in currency pair price in 6 minute window
-                        fd= row.total_crosses/ volatility # fractal dimension for this six minute data
-                    else:
-                        fd=0
-                curr[2]['upper'].clear() # clear the list to store recent bands value
-                curr[2]['lower'].clear() # clear the list to store recent bands value
-                self.calculate_keltner_bands(curr, avg_price, volatility) # function will claculate 100 upper bands and 100 lower bands from avg_price for this six minute data and store in corresponding currency pair dictionary. 
-                date_res = conn.execute(text("SELECT MAX(ticktime) as last_date FROM "+curr[0]+curr[1]+"_raw;"))
-                for row in date_res:
-                    last_date = row.last_date
-                prev_avg=0 # mean price for previous six minutes. For first six minutes of program execution, prev_agg will be zero.
-                agg_data= conn.execute(text("SELECT avgfxrate FROM "+curr[0]+curr[1]+"_agg order by inserttime desc limit 1;")) # get previous six minutes average price.
-                for row in agg_data:
-                    if len(row) !=0: # For first six minutes of executing program, we will not have any entry in _agg tables. This will check if we have rows in_agg tables or not
-                        prev_avg = row.avgfxrate
-                if prev_avg !=0: # for first six minutes of program execution, ret will be xero else it will be calculated by below formula.
-                    ret= (avg_price-prev_avg)/prev_avg
+        #with self.engine.begin() as conn:
+        for curr in self.currency_pairs:
+            collection= self.db[curr[0]+curr[1]+"_raw"]
+            agg_collection= self.db[curr[0]+curr[1]+"_agg"] # create collection for _agg table data
+            result= collection.aggregate([{"$group": {"_id": '', "avg_price": { "$avg": "$fxrate" }, "min_price": { "$min": "$fxrate" }, "max_price": { "$max": "$fxrate" }, "total_crosses": { "$sum": "$cross_number" },"last_date": { "$max": "$ticktime" }}}])
+            for row in result:
+                avg_price = row['avg_price'] # mean price for this six minutes data
+                min_price = row['min_price'] # minimum price for this six minutes data
+                max_price = row['max_price'] # maximum price for this six minutes data
+                last_date = row['last_date']
+                volatility = (max_price- min_price)/avg_price
+                print(row['total_crosses'])
+                if volatility!=0: # In case if their is no change in currency pair price in 6 minute window
+                    fd= row['total_crosses']/ volatility # fractal dimension for this six minute data
                 else:
-                    ret=0
-                print({"inserttime": last_date, "avgfxrate": avg_price, "min_price": min_price, "max_price": max_price, "volatility": volatility, "fractal_dimension": fd, "return": ret})
-                # insert inside the corresponding currency pairs _agg tables
-                conn.execute(text("INSERT INTO "+curr[0]+curr[1]+"_agg (inserttime, avgfxrate, min_price, max_price, volatility, fractal_dimension, return) VALUES (:inserttime, :avgfxrate, :min_price, :max_price, :volatility, :fractal_dimension, :return);"),[{"inserttime": last_date, "avgfxrate": avg_price, "min_price": min_price, "max_price": max_price, "volatility": volatility, "fractal_dimension": fd, "return": ret}])
+                    fd=0
+            curr[2]['upper'].clear() # clear the list to store recent bands value
+            curr[2]['lower'].clear() # clear the list to store recent bands value
+            self.calculate_keltner_bands(curr, avg_price, volatility) # function will claculate 100 upper bands and 100 lower bands from avg_price for this six minute data and store in corresponding currency pair dictionary. 
+            prev_avg=0 # mean price for previous six minutes. For first six minutes of program execution, prev_agg will be zero.
+            agg_data= agg_collection.find(sort=[( 'inserttime', pymongo.DESCENDING )] ).limit(1)
+            for row in agg_data:
+                if len(row) !=0: # For first six minutes of executing program, we will not have any entry in _agg tables. This will check if we have rows in_agg tables or not
+                    prev_avg = row['avgfxrate']
+            if prev_avg !=0: # for first six minutes of program execution, ret will be xero else it will be calculated by below formula.
+                ret= (avg_price-prev_avg)/prev_avg
+            else:
+                ret=0
+            print({"inserttime": last_date, "avgfxrate": avg_price, "min_price": min_price, "max_price": max_price, "volatility": volatility, "fractal_dimension": fd, "return": ret})
+            # insert inside the corresponding currency pairs _agg tables
+            agg_collection.insert_one({"inserttime": last_date, "avgfxrate": avg_price, "min_price": min_price, "max_price": max_price, "volatility": volatility, "fractal_dimension": fd, "return": ret})
+
     """
     Elements in upper band list are already sorted in ascending order while elements in lower band list are store in decending order.
     I am using binary search to serch index of larget element smaller than or equal to the current price in upper band and index of smallest element greater than or equal to current price in lower band.
@@ -182,16 +163,16 @@ class TrailingStopsTrainingData2:
     # this function will fetch data from sqlite tables and create csv files for _agg, _sell and _bought tables
     def create_csv(self):
         basedir= os.path.abspath(os.path.dirname(__file__))
-        with self.engine.begin() as conn:
-            for curr in self.currency_pairs:
-                print(curr[0]+curr[1])
-                print("------------------------------------------------")
-                count_rows= conn.execute(text("SELECT COUNT(*)  FROM "+curr[0]+curr[1]+"_agg;"))
-                for row in count_rows:
-                    print("total no of rows in table ",row)
-                    print("creating csv")
-                results= pd.read_sql_query("SELECT *  FROM "+curr[0]+curr[1]+"_agg;", self.engine)
-                results.to_csv(os.path.join(basedir, curr[0]+curr[1]+".csv"), index= False, sep=";")
+        for curr in self.currency_pairs:
+            agg_collection= self.db[curr[0]+curr[1]+"_agg"]
+            print(curr[0]+curr[1])
+            print("------------------------------------------------")
+            count_rows= agg_collection.aggregate([{"$group":{"_id":'',"total_rows": { "$sum": 1 }}}])
+            for row in count_rows:
+                print("total no of rows in table ",row['total_rows'])
+                print("creating csv")
+            results= pd.DataFrame(list(agg_collection.find()))
+            results.to_csv(os.path.join(basedir, curr[0]+curr[1]+".csv"), index= False, sep=";")
                 
 
     """
@@ -199,15 +180,10 @@ class TrailingStopsTrainingData2:
     We reset agg_count every six minutes and call 
 
     """
-    def trailing_forex_trainingdata2(self):
+    def trailing_forex_trainingdata3(self):
         # Number of list iterations - each one should last about 1 second
         count = 0 # counter to keep track of 10 hours execution
         agg_count = 0 # counter to keep track of six minute wndow
-        
-        # Create the needed tables in the database
-        self.initialize_raw_data_tables() 
-        self.initialize_aggregated_tables()
-        #self.initialize_purchase_tables()
         
         # Open a RESTClient for making the api calls
         client= RESTClient(self.key) 
@@ -228,6 +204,8 @@ class TrailingStopsTrainingData2:
             for currency in self.currency_pairs:
                 from_ = currency[0] 
                 to = currency[1]
+                # create collection to store _raw table data
+                collection= self.db[from_+to+"_raw"]
                 # Call the API with the required parameters
                 try:
                     resp = client.get_real_time_currency_conversion(from_, to, amount=100, precision=2)
@@ -253,8 +231,6 @@ class TrailingStopsTrainingData2:
                     c_number= cross_number- currency[3]
                     c_number= abs(c_number)
                     currency[3]= cross_number # store index of current price to calculate the relative position of next price
-                # Write the data to the SQLite database, raw data tables
-                with self.engine.begin() as conn:
-                    conn.execute(text("INSERT INTO "+from_+to+"_raw(ticktime, fxrate, inserttime, cross_number) VALUES (:ticktime, :fxrate, :inserttime, :cross_number)"),[{"ticktime": dt, "fxrate": avg_price, "inserttime": insert_time, "cross_number": c_number}])
-
+                # Write the data to raw data table collection
+                collection.insert_one({"ticktime": dt, "fxrate": avg_price, "inserttime": insert_time, "cross_number": c_number})
 
