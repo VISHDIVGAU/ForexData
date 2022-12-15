@@ -61,5 +61,5 @@ b) If profit or loss from actual return and predicted return postive for the cur
 At the end of ten hours data _bought and _sell collections we will have data regarding total initial investment, aggregate return, predicted aggregate return, avtual profit or loss, predicted profit or loss, and percentage future loss. 
 Run below command to get the profit or loss and total investment on real time data.
 	```python:
-  	python3 trailingstops2realtimedata_main.py
+  	python3 trailingstops3realtimedata_main.py
   	```
