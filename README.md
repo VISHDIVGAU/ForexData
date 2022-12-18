@@ -70,5 +70,19 @@ At the end of ten hours data _bought and _sell collections we will have data reg
 
 Run below command to get the profit or loss and total investment on real time data.
 ```python:
-  python3 trailingstops3realtimedata_main.py
- ```
+python3 trailingstops3realtimedata_main.py
+```
+# Project
+1) Run below command to collect data
+```python:
+  python3 trailingstops_project_data_main.py
+```
+2) Run below command to train regression model
+```python:
+   python3 trailingstopsproject_training_model_main.py
+```
+3) Run below command to process real time data
+```python:
+   python3 trailingstopsproject_realtimedata_main.py
+```
+

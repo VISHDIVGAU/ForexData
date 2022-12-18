@@ -66,7 +66,7 @@ class TrailingStopsProjectData:
         # create pymango client for mongodb 
         self.client = pymongo.MongoClient("127.0.0.1", 27017)
         # create or point to database in mongodb
-        self.db= self.client['ForexData_project']
+        self.db= self.client['ForexData_project_test']
 
     # Function slightly modified from polygon sample code to format the date string
     """
