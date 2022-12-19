@@ -11,7 +11,7 @@ def main():
 
     data= TrailingStopsDataProjectRealTimeData()
     #print(data.best_sorting)
-    data.trailing_forexdata_project_real_time_data()
+    #data.trailing_forexdata_project_real_time_data()
     data.create_csv() # create csv files for _model_perf tables in final_trailingstops_2_real.db sqlite file
     data.print_data()
 

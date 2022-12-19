@@ -392,13 +392,13 @@ class TrailingStopsDataProjectRealTimeData:
         for curr in self.currency_pairs:
             sell_coll= self.db_new[curr[0]+curr[1]+"_sell"]
             buy_coll= self.db_new[curr[0]+curr[1]+"_bought"]
-            if curr[0] in self.long or curr[1] in self.long:
+            if curr[1] in self.long:
                 print(curr[0]+curr[1]+" bought")
                 print("--------------------------------------")
                 res=buy_coll.find(sort=[( 'inserttime', pymongo.DESCENDING )] ).limit(1)
                 for r in res:
                     print(r)
-            if curr[0] in self.short or curr[1] in self.short:
+            if curr[0] in self.short :
                 print(curr[0]+curr[1]+" sold")
                 print("--------------------------------------")
                 res= sell_coll.find(sort=[( 'inserttime', pymongo.DESCENDING )] ).limit(1)
@@ -422,10 +422,10 @@ class TrailingStopsDataProjectRealTimeData:
                 print("creating csv")
             results= pd.DataFrame(list(agg_collection.find()))
             results.to_csv(os.path.join(basedir, curr[0]+curr[1]+"_agg_real_time.csv"), index= False, sep=";")
-            if curr[0] in self.long or curr[1] in self.long:
+            if curr[1] in self.long:
                 res= pd.DataFrame(list(buy_coll.find()))
                 res.to_csv(os.path.join(basedir, curr[0]+curr[1]+"_bought.csv"), index= False, sep=";")
-            if curr[0] in self.short or curr[1] in self.short:
+            if curr[0] in self.short :
                 res= pd.DataFrame(list(sell_coll.find()))
                 res.to_csv(os.path.join(basedir, curr[0]+curr[1]+"_sell.csv"), index= False, sep=";")
 
